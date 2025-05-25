@@ -37,8 +37,9 @@ const Search = () => {
   // Load watchlist if user is authenticated
   useEffect(() => {
     if (currentUser) {
-      const watchlist = watchlistService.getWatchlist(currentUser.uid);
-      setWatchlistIds(watchlist.map(movie => movie.id));
+       watchlistService.getWatchlist(currentUser.id).then(res => {
+              setWatchlistIds(res.map(movie => movie.id));
+            })
     } else {
       setWatchlistIds([]);
     }
@@ -103,14 +104,14 @@ const Search = () => {
       return;
     }
     
-    watchlistService.addToWatchlist(currentUser.uid, movie);
+    watchlistService.addToWatchlist(currentUser.id, movie);
     setWatchlistIds(prev => [...prev, movie.id]);
   };
   
   const handleRemoveFromWatchlist = (movieId: number) => {
     if (!currentUser) return;
     
-    watchlistService.removeFromWatchlist(currentUser.uid, movieId);
+    watchlistService.removeFromWatchlist(currentUser.id, movieId);
     setWatchlistIds(prev => prev.filter(id => id !== movieId));
   };
   

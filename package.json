@@ -1,5 +1,5 @@
 {
-  "name": "agbo-verse-app",
+  "name": "russo-verse-app",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
     "axios": "^1.6.2",
+    "firebase": "^11.8.1",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",

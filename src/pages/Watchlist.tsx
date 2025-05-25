@@ -20,8 +20,10 @@ const Watchlist = () => {
     }
     
     setIsLoading(true);
-    const userWatchlist = watchlistService.getWatchlist(currentUser.email);
-    setWatchlist(userWatchlist);
+
+     watchlistService.getWatchlist(currentUser.id).then(res => {
+            setWatchlist(res);
+          })
     setIsLoading(false);
   }, [currentUser, navigate]);
   
@@ -29,7 +31,7 @@ const Watchlist = () => {
   const handleRemoveFromWatchlist = (movieId: number) => {
     if (!currentUser) return;
     
-    watchlistService.removeFromWatchlist(currentUser.email, movieId);
+    watchlistService.removeFromWatchlist(currentUser.id, movieId);
     setWatchlist(prev => prev.filter(movie => movie.id !== movieId));
   };
   
@@ -42,7 +44,7 @@ const Watchlist = () => {
     if (!confirmed) return;
     
     // Clear watchlist in localStorage
-    localStorage.setItem(`watchlist_${currentUser.email}`, JSON.stringify([]));
+    localStorage.setItem(`watchlist_${currentUser.id}`, JSON.stringify([]));
     setWatchlist([]);
   };
   

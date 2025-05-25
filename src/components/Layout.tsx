@@ -21,7 +21,7 @@ const Layout = ({ children }: LayoutProps) => {
       </motion.main>
       <footer className="py-6 bg-background-light bg-opacity-30 backdrop-blur-sm">
         <div className="container mx-auto px-4 text-center text-sm text-gray-400">
-          <p>© {new Date().getFullYear()} AGBO VERSE - By Russo Brothers</p>
+          <p>© {new Date().getFullYear()} RUSSO VERSE - By Russo Brothers</p>
           
             <a
             href="https://github.com/IamSAL/movie-app-sds"

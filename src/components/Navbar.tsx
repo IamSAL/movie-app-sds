@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, FilmIcon, Heart, LogIn, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import LogoImage from "../assets/agbo-logo.png";
+import LogoImage from "../assets/russo-logo.png";
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -53,10 +53,20 @@ const Navbar = () => {
             className="flex items-center space-x-2 text-2xl font-display font-bold text-white"
           >
             <motion.div
-              whileHover={{ rotate: 0.5, scale: 1.1 }}
+              whileHover={{ rotate: 0.1, scale: 1.05 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
-              <img src={LogoImage} alt="AGBO Verse" className="h-8 w-auto" />
+              {/* <img src={LogoImage} alt="RUSSO Verse" className="h-8 w-auto" /> */}
+                <h1
+                  className="uppercase font-extrabold font-mono text-[26px] tracking-widest text-transparent"
+                  style={{
+                    WebkitTextStroke: '1.5px white',
+                    stroke: '1.5px white',
+                    textShadow: 'none',
+                  }}
+                >
+                  RUSSOVERSE
+                </h1>
             </motion.div>
          
             

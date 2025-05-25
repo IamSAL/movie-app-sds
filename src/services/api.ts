@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from './supbase';
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY; 
 const BASE_URL = import.meta.env.VITE_TMDB_BASE_URL;
@@ -83,30 +84,67 @@ export const movieApi = {
   },
 };
 
-// Storage for watchlist (using localStorage in this prototype)
+// Storage for watchlist (using Supabase)
 export const watchlistService = {
-  getWatchlist: (userId: string): Movie[] => {
-    const storedWatchlist = localStorage.getItem(`watchlist_${userId}`);
-    return storedWatchlist ? JSON.parse(storedWatchlist) : [];
-  },
+  getWatchlist: async (userId: string): Promise<Movie[]> => {
+    const { data, error } = await supabase
+      .from('watchlist')
+      .select('movie_data')
+      .eq('user_id', userId);
+    if (error) {
+      console.error('Error fetching watchlist:', error);
+      return [];
+    }
+    console.log({data})
   
-  addToWatchlist: (userId: string, movie: Movie): void => {
-    const watchlist = watchlistService.getWatchlist(userId);
-    // Check if movie already exists in watchlist
-    if (!watchlist.some((m) => m.id === movie.id)) {
-      const updatedWatchlist = [...watchlist, movie];
-      localStorage.setItem(`watchlist_${userId}`, JSON.stringify(updatedWatchlist));
+    return data ? data.map((item: any) => item.movie_data) : [];
+  },
+
+  addToWatchlist: async (userId: string, movie: Movie): Promise<void> => {
+    console.log("adding",userId,movie.id)
+    const { data: existing, error: checkError } = await supabase
+      .from('watchlist')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('movie_id', movie.id)
+      .maybeSingle();
+    if (checkError) {
+      console.error('Error checking watchlist:', checkError);
+      return;
+    }
+    if (!existing) {
+      const { error } = await supabase
+        .from('watchlist')
+        .insert({ user_id: userId, movie_id: movie.id, movie_data: movie });
+      if (error) {
+        console.error('Error adding to watchlist:', error);
+      }
+    }
+     console.log("added", userId, movie.id);
+  },
+
+  removeFromWatchlist: async (userId: string, movieId: number): Promise<void> => {
+    const { error } = await supabase
+      .from('watchlist')
+      .delete()
+      .eq('user_id', userId)
+      .eq('movie_id', movieId);
+    if (error) {
+      console.error('Error removing from watchlist:', error);
     }
   },
-  
-  removeFromWatchlist: (userId: string, movieId: number): void => {
-    const watchlist = watchlistService.getWatchlist(userId);
-    const updatedWatchlist = watchlist.filter((movie) => movie.id !== movieId);
-    localStorage.setItem(`watchlist_${userId}`, JSON.stringify(updatedWatchlist));
-  },
-  
-  isInWatchlist: (userId: string, movieId: number): boolean => {
-    const watchlist = watchlistService.getWatchlist(userId);
-    return watchlist.some((movie) => movie.id === movieId);
+
+  isInWatchlist: async (userId: string, movieId: number): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('watchlist')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('movie_id', movieId)
+      .maybeSingle();
+    if (error) {
+      console.error('Error checking watchlist:', error);
+      return false;
+    }
+    return !!data;
   },
 };

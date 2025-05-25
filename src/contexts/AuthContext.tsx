@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '../services/supbase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
-
-interface MockUser {
-  email: string;
-}
+// Map Supabase user to a compatible User type
+export type User = SupabaseUser;
 
 type AuthContextType = {
-  currentUser: MockUser | null;
-  signup: (email: string, password: string) => Promise<MockUser>;
-  login: (email: string, password: string) => Promise<MockUser>;
+  currentUser: User | null;
+  signup: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string) => Promise<User>;
   signOut: () => Promise<void>;
   loading: boolean;
   error: string | null;
@@ -25,95 +25,61 @@ export function useAuth() {
   return context;
 }
 
-function setCookie(name: string, value: string, days = 7) {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
-}
-
-function getCookie(name: string) {
-  return document.cookie.split('; ').reduce((r, v) => {
-    const parts = v.split('=');
-    return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-  }, '');
-}
-
-function deleteCookie(name: string) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<MockUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const clearError = () => setError(null);
 
-  const DEMO_EMAIL = 'demo@example.com';
-  const DEMO_PASSWORD = 'password123';
-
   const signup = async (email: string, password: string) => {
     clearError();
-  
-    if (email === DEMO_EMAIL) {
-      setCookie('mock_auth', DEMO_EMAIL);
-      const user = { email: DEMO_EMAIL };
-      setCurrentUser(user);
-      return user;
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    if (signUpError || !data.user) {
+      setError(signUpError?.message || 'Signup failed');
+      throw signUpError || new Error('Signup failed');
     }
-
-
-    const users = JSON.parse(localStorage.getItem('mock_users') || '{}');
-    if (users[email]) {
-      setError('User already exists');
-      throw new Error('User already exists');
-    }
-    users[email] = { email, password };
-    localStorage.setItem('mock_users', JSON.stringify(users));
-    setCookie('mock_auth', email);
-    const user = { email };
-    setCurrentUser(user);
-    return user;
+    setCurrentUser(data.user);
+    return data.user;
   };
 
   const login = async (email: string, password: string) => {
     clearError();
-    // Allow demo user to always login
-    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-      setCookie('mock_auth', DEMO_EMAIL);
-      const user = { email: DEMO_EMAIL };
-      setCurrentUser(user);
-      return user;
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError || !data.user) {
+      setError(signInError?.message || 'Login failed');
+      throw signInError || new Error('Login failed');
     }
-    const users = JSON.parse(localStorage.getItem('mock_users') || '{}');
-    if (!users[email] || users[email].password !== password) {
-      setError('Invalid credentials');
-      throw new Error('Invalid credentials');
-    }
-    setCookie('mock_auth', email);
-    const user = { email };
-    setCurrentUser(user);
-    return user;
+    setCurrentUser(data.user);
+    return data.user;
   };
 
   const signOut = async () => {
     clearError();
-    deleteCookie('mock_auth');
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      setError(signOutError.message);
+      throw signOutError;
+    }
     setCurrentUser(null);
   };
 
   const checkAuthState = useCallback(() => {
     setLoading(true);
-    const email = getCookie('mock_auth');
-    if (email) {
-      setCurrentUser({ email });
-    } else {
-      setCurrentUser(null);
-    }
-    setLoading(false);
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      setCurrentUser(session?.user ?? null);
+      setLoading(false);
+    });
+    // Return unsubscribe function
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    checkAuthState();
+    const unsubscribe = checkAuthState();
+    return unsubscribe;
   }, [checkAuthState]);
 
   const value = {

@@ -14,9 +14,22 @@ const MovieDetails = () => {
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [watchlistIds, setWatchlistIds] = useState<number[]>([]);
+
+    // Load watchlist if user is authenticated
+    useEffect(() => {
+      if (currentUser) {
+         watchlistService.getWatchlist(currentUser.id).then(res => {
+                setWatchlistIds(res.map(movie => movie.id));
+              })
+      } else {
+        setWatchlistIds([]);
+      }
+    }, [currentUser]);
   
   // Fetch movie details and recommendations
   useEffect(() => {
+    let isMounted = true;
     const fetchMovieData = async () => {
       if (!id) return;
       
@@ -27,24 +40,26 @@ const MovieDetails = () => {
           movieApi.getMovieRecommendations(id),
         ]);
         
-        setMovie(movieData);
+        if (!isMounted) return;
+        setMovie(prev => prev && prev.id === movieData.id ? prev : movieData);
         setRecommendations(recommendationsData);
         
         // Check if movie is in watchlist
         if (currentUser) {
-          const isInList = watchlistService.isInWatchlist(currentUser.email, Number(id));
+          const isInList =await watchlistService.isInWatchlist(currentUser.id, Number(id));
           setIsInWatchlist(isInList);
         }
       } catch (error) {
-        console.error('Error fetching movie details:', error);
+        if (isMounted) console.error('Error fetching movie details:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
     
     fetchMovieData();
     // Scroll to top when movie changes
     window.scrollTo(0, 0);
+    return () => { isMounted = false; };
   }, [id, currentUser]);
   
   // Handle watchlist actions
@@ -57,10 +72,10 @@ const MovieDetails = () => {
     if (!movie) return;
     
     if (isInWatchlist) {
-      watchlistService.removeFromWatchlist(currentUser.email, movie.id);
+      watchlistService.removeFromWatchlist(currentUser.id, movie.id);
       setIsInWatchlist(false);
     } else {
-      watchlistService.addToWatchlist(currentUser.email, movie);
+      watchlistService.addToWatchlist(currentUser.id, movie);
       setIsInWatchlist(true);
     }
   };
@@ -87,7 +102,7 @@ const MovieDetails = () => {
       return;
     }
     
-    watchlistService.addToWatchlist(currentUser.email, movie);
+    watchlistService.addToWatchlist(currentUser.id, movie);
     if (movie.id === Number(id)) {
       setIsInWatchlist(true);
     }
@@ -96,7 +111,7 @@ const MovieDetails = () => {
   const handleRemoveFromWatchlist = (movieId: number) => {
     if (!currentUser) return;
     
-    watchlistService.removeFromWatchlist(currentUser.email, movieId);
+    watchlistService.removeFromWatchlist(currentUser.id, movieId);
     if (movieId === Number(id)) {
       setIsInWatchlist(false);
     }
@@ -131,7 +146,13 @@ const MovieDetails = () => {
       </motion.div>
     );
   }
+
+  const placeholder = `https://placehold.co/500x750?text=${movie.title?.split(' ').join('+')}`
+    const posterUrl = movie.poster_path 
+      ? `${posterSizes.large}${movie.poster_path}`
+      :placeholder ;
   
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -151,6 +172,7 @@ const MovieDetails = () => {
               transition={{ duration: 0.6 }}
             >
               <img 
+                
                 src={`${backdropSizes.large}${movie.backdrop_path}`} 
                 alt={movie.title} 
                 className="w-full h-full object-cover"
@@ -185,7 +207,11 @@ const MovieDetails = () => {
           >
             <div className="rounded-lg overflow-hidden shadow-lg">
               <img 
-                src={movie.poster_path ? `${posterSizes.large}${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster'} 
+          
+                onError={(e) => {
+                  e.currentTarget.src = placeholder;
+                }}
+                src={posterUrl}
                 alt={movie.title} 
                 className="w-full h-auto"
               />
@@ -275,7 +301,7 @@ const MovieDetails = () => {
             <MovieGrid
               title="You Might Also Like"
               movies={recommendations}
-              watchlistMovieIds={currentUser ? watchlistService.getWatchlist(currentUser.email).map(m => m.id) : []}
+              watchlistMovieIds={watchlistIds}
               onAddToWatchlist={handleAddToWatchlist}
               onRemoveFromWatchlist={handleRemoveFromWatchlist}
             />

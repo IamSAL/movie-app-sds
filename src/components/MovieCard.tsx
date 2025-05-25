@@ -19,9 +19,10 @@ const MovieCard = ({
   onRemoveFromWatchlist,
 }: MovieCardProps) => {
   const { currentUser } = useAuth();
+  const placeholder = `https://placehold.co/342x513?text=${movie.title?.split(' ').join('+')}`
   const posterUrl = movie.poster_path 
     ? `${posterSizes.medium}${movie.poster_path}`
-    : 'https://via.placeholder.com/342x513?text=No+Poster';
+    :placeholder ;
   
   const handleWatchlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -46,6 +47,9 @@ const MovieCard = ({
         {/* Poster */}
         <div className="relative aspect-[2/3] overflow-hidden">
           <motion.img
+            onError={(e) => {
+              e.currentTarget.src = placeholder;
+            }}
             src={posterUrl}
             alt={movie.title}
             className="w-full h-full object-cover"
