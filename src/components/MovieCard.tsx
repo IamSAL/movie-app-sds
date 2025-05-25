@@ -46,6 +46,18 @@ const MovieCard = ({
       <Link to={`/movie/${movie.id}`} className="block h-full">
         {/* Poster */}
         <div className="relative aspect-[2/3] overflow-hidden">
+          {/* Always-visible Heart button (wishlist) */}
+          {currentUser && (
+            <motion.button
+              onClick={handleWatchlistClick}
+              className={`absolute top-2 left-2 z-10 flex items-center justify-center rounded-full p-2 transition-colors shadow-lg
+                ${isInWatchlist ? 'bg-accent-600 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              whileTap={{ scale: 0.9 }}
+              aria-label={isInWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
+            >
+              <Heart className={`w-5 h-5 ${isInWatchlist ? 'fill-current' : ''}`} />
+            </motion.button>
+          )}
           <motion.img
             onError={(e) => {
               e.currentTarget.src = placeholder;
